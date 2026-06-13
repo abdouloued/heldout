@@ -38,7 +38,7 @@ pub fn run_held_out(root: &Path, test_cmds: &[String], timeout_secs: u64) -> Vec
     if test_cmds.is_empty() {
         return vec![ReplayResult::skipped(
             "<no test command>",
-            "no test_cmd configured — set replay.commands in tattle.yaml or use --test-cmd",
+            "no test_cmd configured — set replay.commands in heldout.yaml or use --test-cmd",
         )];
     }
 
@@ -47,7 +47,7 @@ pub fn run_held_out(root: &Path, test_cmds: &[String], timeout_secs: u64) -> Vec
         return test_cmds
             .iter()
             .map(|cmd| {
-                ReplayResult::skipped(cmd, "held-out snapshot missing — run `tattle start` first")
+                ReplayResult::skipped(cmd, "held-out snapshot missing — run `heldout start` first")
             })
             .collect();
     }
@@ -72,13 +72,13 @@ pub fn run_held_out(root: &Path, test_cmds: &[String], timeout_secs: u64) -> Vec
 fn build_sandbox(root: &Path, heldout_dir: &Path) -> Result<tempfile::TempDir> {
     let sandbox = tempfile::tempdir().context("create sandbox tempdir")?;
 
-    // Copy all non-.tattle files from working tree
+    // Copy all non-.heldout files from working tree
     for result in WalkBuilder::new(root)
         .hidden(false)
         .filter_entry(|e| {
             e.path()
                 .components()
-                .all(|c| c.as_os_str() != ".tattle" && c.as_os_str() != ".git")
+                .all(|c| c.as_os_str() != ".heldout" && c.as_os_str() != ".git")
         })
         .build()
     {
@@ -250,7 +250,7 @@ mod tests {
         git_add_commit(tmp.path(), "baseline");
 
         // Snapshot held-out tests (original)
-        let heldout = tmp.path().join(".tattle/heldout");
+        let heldout = tmp.path().join(".heldout/heldout");
         fs::create_dir_all(heldout.join("tests")).unwrap();
         fs::copy(
             tmp.path().join("tests/check.sh"),
@@ -293,7 +293,7 @@ mod tests {
         git_add_commit(tmp.path(), "baseline");
 
         // Snapshot: original test expects "correct"
-        let heldout = tmp.path().join(".tattle/heldout");
+        let heldout = tmp.path().join(".heldout/heldout");
         fs::create_dir_all(heldout.join("tests")).unwrap();
         fs::copy(
             tmp.path().join("tests/check.sh"),

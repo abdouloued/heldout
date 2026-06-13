@@ -1,14 +1,14 @@
 # Migration From AgentScope
 
-`tattle` is a focused relaunch of the AgentScope core idea: hold coding agents accountable at the git boundary.
+`heldout` is a focused relaunch of the AgentScope core idea: hold coding agents accountable at the git boundary.
 
 ## Harvested
 
 - Git diff boundary: kept the `git2` approach and reduced it to a small worktree diff reader.
-- Config shape: kept YAML config with serde defaults, renamed to `tattle.yaml`.
-- Session shape: kept the idea of recording the active mission, renamed state to `.tattle/session.json`.
+- Config shape: kept YAML config with serde defaults, renamed to `heldout.yaml`.
+- Session shape: kept the idea of recording the active mission, renamed state to `.heldout/session.json`.
 - Reporting contract: kept terminal output, JSON output, and non-zero exit codes for CI.
-- MCP surface: kept a minimal JSON-RPC server with a `tattle_check` tool.
+- MCP surface: kept a minimal JSON-RPC server with a `heldout_check` tool.
 
 ## Dropped
 

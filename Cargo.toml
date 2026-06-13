@@ -1,18 +1,18 @@
 [package]
-name = "tattle"
+name = "heldout"
 version = "0.1.0"
 edition = "2021"
-authors = ["Tattle Contributors"]
+authors = ["Heldout Contributors"]
 description = "Catches AI coding agents that fake task completion — deleted tests, skipped tests, weakened assertions, and a held-out test replay that proves it"
 license = "MIT"
-repository = "https://github.com/abdouloued/tattle"
+repository = "https://github.com/abdouloued/heldout"
 keywords = ["ai", "agents", "git", "testing", "cli"]
 categories = ["command-line-utilities", "development-tools"]
 readme = "README.md"
 rust-version = "1.75"
 
 [[bin]]
-name = "tattle"
+name = "heldout"
 path = "src/main.rs"
 
 [dependencies]

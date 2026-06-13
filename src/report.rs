@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-const LAST_RUN_FILE: &str = ".tattle/last_run.json";
+const LAST_RUN_FILE: &str = ".heldout/last_run.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CheckReport {
@@ -98,7 +98,7 @@ pub fn run_check(
 pub fn print_last(root: &Path, markdown: bool) -> Result<()> {
     let path = root.join(LAST_RUN_FILE);
     let text = fs::read_to_string(&path)
-        .with_context(|| "No previous run found. Run `tattle check` first.")?;
+        .with_context(|| "No previous run found. Run `heldout check` first.")?;
     let report: CheckReport = serde_json::from_str(&text).context("parse last_run.json")?;
     if markdown {
         println!("{}", render_markdown(&report));
@@ -117,7 +117,7 @@ pub fn print_terminal(report: &CheckReport) {
 
     println!();
     println!(
-        "tattle  task: {}   base: {}",
+        "heldout  task: {}   base: {}",
         report.task.as_deref().unwrap_or("<none>"),
         report
             .base_commit
@@ -195,7 +195,7 @@ pub fn render_markdown(report: &CheckReport) -> String {
         .map(|s| &s[..7.min(s.len())])
         .unwrap_or("<none>");
 
-    out.push_str(&format!("## tattle integrity report — {verdict_label}\n\n"));
+    out.push_str(&format!("## heldout integrity report — {verdict_label}\n\n"));
     out.push_str(&format!(
         "**task:** {task}  \n**base commit:** `{base}`\n\n"
     ));

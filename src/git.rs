@@ -93,9 +93,9 @@ mod tests {
             temp.path(),
             &[
                 "-c",
-                "user.name=Tattle",
+                "user.name=Heldout",
                 "-c",
-                "user.email=tattle@example.com",
+                "user.email=heldout@example.com",
                 "commit",
                 "-m",
                 "baseline",

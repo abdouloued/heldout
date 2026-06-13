@@ -1,6 +1,6 @@
 # Add this to your CI after the agent step.
-# Fails the job if tattle detects integrity violations.
-name: tattle integrity check
+# Fails the job if heldout detects integrity violations.
+name: heldout integrity check
 
 on:
   pull_request:
@@ -13,31 +13,31 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install tattle
+      - name: Install heldout
         run: |
-          curl -fsSL https://github.com/abdouloued/tattle/releases/latest/download/tattle-linux-x86_64.tar.gz \
+          curl -fsSL https://github.com/abdouloued/heldout/releases/latest/download/heldout-linux-x86_64.tar.gz \
             | tar -xz -C /usr/local/bin
 
       # Run before agent step — records baseline + snapshots tests
-      - name: tattle start
+      - name: heldout start
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           ACTOR: ${{ github.actor }}
-        run: tattle start "$PR_TITLE" --agent "$ACTOR"
+        run: heldout start "$PR_TITLE" --agent "$ACTOR"
 
       # ... your agent step goes here ...
 
       # Check after agent step — replay held-out tests, report findings
-      - name: tattle check
-        id: tattle
-        run: tattle check --json > tattle-report.json
+      - name: heldout check
+        id: heldout
+        run: heldout check --json > heldout-report.json
         continue-on-error: true
 
-      - name: Upload tattle report
+      - name: Upload heldout report
         uses: actions/upload-artifact@v4
         with:
-          name: tattle-report
-          path: tattle-report.json
+          name: heldout-report
+          path: heldout-report.json
 
       - name: Post PR comment
         if: always()
@@ -45,14 +45,14 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const report = JSON.parse(fs.readFileSync('tattle-report.json', 'utf8'));
+            const report = JSON.parse(fs.readFileSync('heldout-report.json', 'utf8'));
             const verdict = report.verdict;
             const icon = verdict === 'PASS' ? '✅' : '❌';
             const findings = report.findings.length;
             const replayFailed = report.replay.filter(r => r.ran && !r.passed).length;
             const task = report.task || 'none';
             const base = (report.base_commit || '').slice(0,7);
-            let body = `## ${icon} tattle integrity — ${verdict}\n\n` +
+            let body = `## ${icon} heldout integrity — ${verdict}\n\n` +
               `**Findings:** ${findings}  **Replay failures:** ${replayFailed}\n\n`;
             if (findings > 0) {
               body += '| Code | File | Detail |\n|------|------|--------|\n';
@@ -68,7 +68,7 @@ jobs:
             });
 
       - name: Fail on integrity violation
-        if: steps.tattle.outcome == 'failure'
+        if: steps.heldout.outcome == 'failure'
         run: |
-          echo "tattle found integrity violations — see tattle-report.json"
+          echo "heldout found integrity violations — see heldout-report.json"
           exit 1

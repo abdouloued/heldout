@@ -29,7 +29,7 @@ pub async fn run_server() -> Result<()> {
         let result = match method {
             "initialize" => serde_json::json!({
                 "protocolVersion": "2024-11-05",
-                "serverInfo": { "name": "tattle", "version": env!("CARGO_PKG_VERSION") },
+                "serverInfo": { "name": "heldout", "version": env!("CARGO_PKG_VERSION") },
                 "capabilities": { "tools": {} }
             }),
 
@@ -37,7 +37,7 @@ pub async fn run_server() -> Result<()> {
                 "tools": [
                     {
                         "name": "integrity_status",
-                        "description": "Get the active tattle session — task, agent, base commit, and start time.",
+                        "description": "Get the active heldout session — task, agent, base commit, and start time.",
                         "inputSchema": { "type": "object", "properties": {} }
                     },
                     {
@@ -47,7 +47,7 @@ pub async fn run_server() -> Result<()> {
                     },
                     {
                         "name": "integrity_start",
-                        "description": "Start a new tattle session for an agent task.",
+                        "description": "Start a new heldout session for an agent task.",
                         "inputSchema": {
                             "type": "object",
                             "properties": {
@@ -79,7 +79,7 @@ pub async fn run_server() -> Result<()> {
                             &s.git_baseline[..7.min(s.git_baseline.len())],
                             s.started_at
                         ),
-                        Ok(None) => "No active session. Run: tattle start \"<task>\"".to_string(),
+                        Ok(None) => "No active session. Run: heldout start \"<task>\"".to_string(),
                         Err(e) => format!("error: {e}"),
                     },
 

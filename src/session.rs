@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub const SESSION_DIR: &str = ".tattle";
-pub const SESSION_FILE: &str = ".tattle/session.json";
-pub const HELDOUT_DIR: &str = ".tattle/heldout";
+pub const SESSION_DIR: &str = ".heldout";
+pub const SESSION_FILE: &str = ".heldout/session.json";
+pub const HELDOUT_DIR: &str = ".heldout/heldout";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Session {
@@ -78,8 +78,8 @@ pub fn snapshot_test_files(root: &Path, heldout_dir: &Path) -> Result<usize> {
     for result in WalkBuilder::new(root)
         .hidden(false)
         .filter_entry(|e| {
-            // Skip .tattle dir itself
-            e.path().components().all(|c| c.as_os_str() != ".tattle")
+            // Skip .heldout dir itself
+            e.path().components().all(|c| c.as_os_str() != ".heldout")
         })
         .build()
     {
