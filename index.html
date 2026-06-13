@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>heldout — your agent can't cheat a test it never saw</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Syncopate:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void:    #03050a;
+      --deep:    #080c14;
+      --surface: #0c1120;
+      --border:  #151d2e;
+      --border2: #1e2d45;
+      --dim:     #3a4d65;
+      --muted:   #5a7090;
+      --text:    #94afc8;
+      --bright:  #d0e4f5;
+      --white:   #f0f8ff;
+      --red:     #ff2d2d;
+      --red-glow:rgba(255,45,45,0.25);
+      --red-dim: rgba(255,45,45,0.08);
+      --green:   #00e87a;
+      --green-glow:rgba(0,232,122,0.2);
+      --amber:   #ffaa00;
+      --cyan:    #00c8ff;
+      --cyan-glow:rgba(0,200,255,0.15);
+      --mono:    'JetBrains Mono', monospace;
+      --display: 'Barlow Condensed', sans-serif;
+      --label:   'Syncopate', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--void);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,200,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,200,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 20%, rgba(255,45,45,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 85% 80%, rgba(0,200,255,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(3,5,10,0.7) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    nav, main, footer { position: relative; z-index: 1; }
+
+    /* NAV */
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 48px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: rgba(3,5,10,0.88);
+      backdrop-filter: blur(16px);
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-family: var(--display);
+      font-weight: 900; font-size: 22px;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--white);
+    }
+    .nav-logo .acc { color: var(--red); text-shadow: 0 0 20px var(--red); }
+
+    nav ul { display: flex; gap: 32px; list-style: none; align-items: center; }
+    nav a {
+      font-family: var(--label); font-size: 10px; letter-spacing: 0.12em;
+      color: var(--muted); text-decoration: none; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--cyan); }
+    .nav-gh {
+      background: var(--red) !important; color: var(--white) !important;
+      padding: 8px 20px !important;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+      transition: box-shadow 0.2s !important;
+    }
+    .nav-gh:hover { box-shadow: 0 0 28px var(--red-glow) !important; color: var(--white) !important; }
+
+    /* HERO */
+    .hero {
+      min-height: calc(100vh - 65px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 48px 60px;
+      text-align: center; position: relative; overflow: hidden;
+    }
+
+    .hero-wm {
+      position: absolute;
+      font-family: var(--display); font-weight: 900;
+      font-size: clamp(180px, 35vw, 480px);
+      letter-spacing: -0.04em;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255,45,45,0.07);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -48%);
+      pointer-events: none; user-select: none; white-space: nowrap;
+      animation: wmpulse 4s ease-in-out infinite;
+    }
+    @keyframes wmpulse { 0%,100%{opacity:1} 50%{opacity:0.45} }
+
+    .hero-badge {
+      font-family: var(--label); font-size: 10px;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--cyan); border: 1px solid rgba(0,200,255,0.3);
+      padding: 6px 18px; margin-bottom: 32px;
+      opacity: 0; animation: fadeD 0.6s ease forwards 0.1s;
+    }
+
+    .hero-hl {
+      font-family: var(--display); font-weight: 900;
+      font-size: clamp(60px, 9vw, 130px);
+      line-height: 0.92; letter-spacing: -0.01em;
+      text-transform: uppercase; color: var(--white);
+      margin-bottom: 8px;
+      opacity: 0; animation: fadeD 0.6s ease forwards 0.2s;
+    }
+    .hero-hl .red {
+      display: block; color: var(--red);
+      text-shadow: 0 0 40px rgba(255,45,45,0.6), 0 0 90px rgba(255,45,45,0.2);
+      animation: flicker 7s ease-in-out infinite 1.5s;
+    }
+    @keyframes flicker {
+      0%,93%,95.5%,98%,100%{ opacity:1; text-shadow:0 0 40px rgba(255,45,45,0.6),0 0 90px rgba(255,45,45,0.2); }
+      94%,97%{ opacity:0.85; text-shadow:0 0 18px rgba(255,45,45,0.35); }
+    }
+
+    .hero-sub {
+      font-size: 15px; color: var(--text);
+      max-width: 560px; margin: 28px auto 48px; line-height: 1.8;
+      opacity: 0; animation: fadeD 0.6s ease forwards 0.3s;
+    }
+    .hero-sub strong { color: var(--bright); }
+
+    .term-wrap {
+      width: 100%; max-width: 640px; margin: 0 auto;
+      opacity: 0; animation: fadeD 0.6s ease forwards 0.4s;
+    }
+
+    .terminal {
+      background: rgba(8,12,20,0.97);
+      border: 1px solid var(--border2);
+      box-shadow: 0 0 0 1px rgba(0,200,255,0.04), 0 32px 80px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.03);
+      position: relative; overflow: hidden;
+    }
+
+    .terminal::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none; z-index: 2;
+    }
+    .terminal::after {
+      content: '';
+      position: absolute; left: 0; right: 0; height: 60px;
+      background: linear-gradient(transparent, rgba(0,200,255,0.03), transparent);
+      animation: scan 4s linear infinite;
+      pointer-events: none; z-index: 2;
+    }
+    @keyframes scan { from{top:-60px} to{top:100%} }
+
+    .term-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 18px;
+      background: rgba(12,17,32,0.95);
+      border-bottom: 1px solid var(--border);
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff453a; box-shadow: 0 0 6px rgba(255,69,58,0.5); }
+    .dot-y { background: #ffd60a; box-shadow: 0 0 6px rgba(255,214,10,0.3); }
+    .dot-g { background: #32d74b; box-shadow: 0 0 6px rgba(50,215,75,0.3); }
+    .term-title { margin: 0 auto; font-family: var(--label); font-size: 9px; letter-spacing: 0.15em; color: var(--dim); text-transform: uppercase; }
+
+    .term-body { padding: 22px 22px 20px; font-size: 13px; line-height: 1.9; position: relative; z-index: 1; }
+
+    .t-p { color: var(--dim); }
+    .t-c { color: var(--bright); }
+    .t-d { color: var(--dim); }
+    .t-l { color: var(--text); }
+    .t-r { color: var(--red); font-weight: 700; }
+    .sp  { display: block; height: 4px; }
+
+    .verdict-box {
+      margin-top: 14px; padding: 12px 16px;
+      border: 1px solid rgba(255,45,45,0.4);
+      background: var(--red-dim);
+      display: flex; align-items: center; gap: 14px;
+      box-shadow: 0 0 30px rgba(255,45,45,0.12), inset 0 0 20px rgba(255,45,45,0.04);
+    }
+    .v-badge {
+      font-family: var(--display); font-weight: 900; font-size: 18px;
+      letter-spacing: 0.1em; color: var(--red);
+      text-shadow: 0 0 20px rgba(255,45,45,0.9);
+    }
+    .v-msg { color: var(--text); font-size: 12px; }
+
+    .cursor-blink {
+      display: inline-block; width: 7px; height: 14px;
+      background: var(--cyan); vertical-align: middle;
+      box-shadow: 0 0 8px var(--cyan);
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 50%{opacity:0} }
+
+    .install-row {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-top: 40px;
+      opacity: 0; animation: fadeD 0.6s ease forwards 0.55s;
+    }
+    .install-box {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--surface); border: 1px solid var(--border2);
+      padding: 14px 22px;
+      box-shadow: 0 0 40px rgba(0,200,255,0.05);
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+    .install-box:hover { box-shadow: 0 0 40px rgba(0,200,255,0.13); border-color: rgba(0,200,255,0.22); }
+    .install-box .dl { color: var(--dim); }
+    .install-box .cm { color: var(--green); font-size: 15px; user-select: all; }
+
+    .copy-btn {
+      background: none; border: 1px solid var(--border2);
+      color: var(--muted); font-family: var(--label);
+      font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 6px 14px; cursor: pointer;
+      clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 16px var(--cyan-glow); }
+    .copy-btn.ok    { border-color: var(--green); color: var(--green); box-shadow: 0 0 16px var(--green-glow); }
+
+    .scroll-hint {
+      margin-top: 56px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+      opacity: 0; animation: fadeD 0.6s ease forwards 0.7s;
+    }
+    .scroll-hint span { font-family: var(--label); font-size: 9px; letter-spacing: 0.2em; color: var(--dim); text-transform: uppercase; }
+    .scroll-line { width: 1px; height: 48px; background: linear-gradient(var(--cyan), transparent); animation: sp 2s ease-in-out infinite; }
+    @keyframes sp { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+    /* SECTIONS */
+    .section { border-top: 1px solid var(--border); padding: 100px 48px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+
+    .s-label {
+      font-family: var(--label); font-size: 10px; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .s-label::after { content:''; flex: 0 0 40px; height: 1px; background: var(--cyan); opacity: 0.4; }
+
+    .s-title {
+      font-family: var(--display); font-weight: 900;
+      font-size: clamp(44px, 6vw, 82px);
+      text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.95;
+      color: var(--white); margin-bottom: 16px;
+    }
+    .s-title .hl  { color: var(--red);   text-shadow: 0 0 30px rgba(255,45,45,0.4); }
+    .s-title .hlg { color: var(--green);  text-shadow: 0 0 30px rgba(0,232,122,0.3); }
+
+    .s-sub { font-size: 14px; color: var(--text); max-width: 520px; line-height: 1.8; margin-bottom: 60px; }
+
+    /* STEPS */
+    .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; }
+
+    .step {
+      background: var(--deep); border: 1px solid var(--border);
+      padding: 40px 32px; position: relative; overflow: hidden;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .step::before {
+      content:''; position: absolute; top:0; left:0; right:0; height:2px;
+      background: var(--dim); transition: background 0.3s, box-shadow 0.3s;
+    }
+    .step:hover { border-color: var(--border2); box-shadow: 0 0 60px rgba(0,200,255,0.05); }
+    .step:hover::before { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+
+    .step-n {
+      font-family: var(--display); font-weight: 900; font-size: 80px; line-height: 1;
+      color: rgba(255,255,255,0.04); position: absolute; top: 16px; right: 20px;
+      user-select: none;
+    }
+    .step-tag { font-family: var(--label); font-size: 9px; letter-spacing: 0.18em; color: var(--dim); text-transform: uppercase; margin-bottom: 20px; }
+    .step-cmd { font-size: 14px; color: var(--green); padding: 10px 14px; background: rgba(0,232,122,0.05); border-left: 2px solid var(--green); margin-bottom: 20px; }
+    .step-desc { font-size: 13px; color: var(--text); line-height: 1.7; }
+
+    /* CHECKS */
+    .checks-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 2px; }
+
+    .check-card {
+      background: var(--deep); border: 1px solid var(--border);
+      padding: 28px; display: flex; gap: 20px; align-items: flex-start;
+      transition: border-color 0.3s; position: relative; overflow: hidden;
+    }
+    .check-card::after {
+      content:''; position: absolute; inset:0;
+      background: linear-gradient(135deg, rgba(255,45,45,0.03), transparent 60%);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .check-card:hover { border-color: rgba(255,45,45,0.22); }
+    .check-card:hover::after { opacity: 1; }
+
+    .cc { font-family: var(--display); font-weight: 900; font-size: 28px; color: var(--red); text-shadow: 0 0 18px rgba(255,45,45,0.45); flex-shrink: 0; line-height: 1; padding-top: 2px; min-width: 40px; }
+    .cc.w { color: var(--amber); text-shadow: 0 0 18px rgba(255,170,0,0.4); }
+
+    .ck { flex: 1; }
+    .ck-title { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--bright); text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 6px; }
+    .ck-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+    .ck-eg { font-size: 11px; color: var(--dim); margin-top: 8px; font-style: italic; }
+
+    .sev { font-family: var(--label); font-size: 9px; letter-spacing: 0.14em; padding: 3px 8px; flex-shrink: 0; align-self: flex-start; margin-left: auto; }
+    .sf { color: var(--red);   border: 1px solid rgba(255,45,45,0.3);   background: var(--red-dim); }
+    .sw { color: var(--amber); border: 1px solid rgba(255,170,0,0.25);  background: rgba(255,170,0,0.05); }
+
+    /* REPLAY */
+    .replay-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+
+    .replay-text p { font-size: 14px; color: var(--text); line-height: 1.85; margin-bottom: 20px; }
+    .replay-text strong { color: var(--bright); }
+    .replay-text em { color: var(--cyan); font-style: normal; }
+    .replay-text code { color: var(--bright); }
+
+    .flow { display: flex; flex-direction: column; gap: 3px; }
+
+    .flow-item {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px; background: var(--deep); border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    .flow-item.fail-item { border-color: rgba(255,45,45,0.35); background: var(--red-dim); box-shadow: 0 0 40px rgba(255,45,45,0.08); }
+
+    .fi { font-size: 18px; flex-shrink: 0; }
+    .fl { flex: 1; }
+    .fl strong { display: block; font-size: 13px; color: var(--bright); margin-bottom: 2px; }
+    .fl span   { font-size: 12px; color: var(--muted); }
+    .fl em     { color: var(--cyan); font-style: normal; }
+
+    .fv { font-family: var(--display); font-weight: 900; font-size: 16px; letter-spacing: 0.08em; }
+    .fv.fail { color: var(--red); text-shadow: 0 0 16px rgba(255,45,45,0.7); }
+
+    /* CTA */
+    .cta {
+      background: var(--deep); border-top: 1px solid var(--border);
+      padding: 100px 48px; text-align: center; position: relative; overflow: hidden;
+    }
+    .cta::before {
+      content:''; position: absolute; inset:0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,45,45,0.07), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(0,200,255,0.05), transparent 70%);
+      pointer-events: none;
+    }
+    .cta-inner { max-width: 700px; margin: 0 auto; position: relative; }
+
+    .cta-title {
+      font-family: var(--display); font-weight: 900;
+      font-size: clamp(52px, 7vw, 100px);
+      text-transform: uppercase; line-height: 0.95;
+      color: var(--white); letter-spacing: -0.01em; margin-bottom: 20px;
+    }
+    .cta-sub { font-size: 14px; color: var(--muted); margin-bottom: 52px; line-height: 1.7; }
+
+    .cta-cmds { display: inline-flex; flex-direction: column; gap: 2px; text-align: left; margin-bottom: 48px; min-width: 360px; }
+    .cta-line { padding: 13px 20px; background: rgba(8,12,20,0.8); border: 1px solid var(--border); font-size: 13px; display: flex; gap: 10px; }
+    .cp { color: var(--dim); }
+    .cg { color: var(--green); }
+    .cw { color: var(--bright); }
+    .cd { color: var(--dim); font-style: italic; }
+
+    .cta-links { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+    .cta-links a {
+      font-family: var(--label); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; padding-bottom: 3px; border-bottom: 1px solid var(--border2);
+      transition: all 0.2s;
+    }
+    .cta-links a:hover { color: var(--cyan); border-color: var(--cyan); }
+
+    footer {
+      padding: 24px 48px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--label); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim);
+      position: relative; z-index: 1;
+    }
+    footer a { color: var(--dim); text-decoration: none; transition: color 0.2s; }
+    footer a:hover { color: var(--muted); }
+
+    /* ANIMATIONS */
+    @keyframes fadeD { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      nav ul { display: none; }
+      .hero { padding: 60px 24px 48px; }
+      .section { padding: 72px 24px; }
+      .steps, .checks-grid { grid-template-columns: 1fr; }
+      .replay-layout { grid-template-columns: 1fr; gap: 48px; }
+      .cta { padding: 72px 24px; }
+      footer { flex-direction: column; gap: 8px; text-align: center; padding: 20px 24px; }
+      .cta-cmds { min-width: unset; width: 100%; }
+      .hero-wm { font-size: 40vw; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">held<span class="acc">out</span></div>
+  <ul>
+    <li><a href="#how">how</a></li>
+    <li><a href="#checks">checks</a></li>
+    <li><a href="#replay">replay</a></li>
+    <li><a href="https://github.com/abdouloued/heldout" target="_blank" class="nav-gh">github</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-wm" aria-hidden="true">FAIL</div>
+
+  <div class="hero-badge">AI Agent Integrity Checker</div>
+
+  <h1 class="hero-hl">
+    Your agent<br>
+    <span class="red">lied.</span>
+  </h1>
+
+  <p class="hero-sub">
+    heldout re-runs the tests your agent swore it passed —
+    and shows you <strong>exactly where it cheated.</strong>
+    Deleted tests. Skipped assertions. Rewritten expectations.
+    All caught. Deterministically.
+  </p>
+
+  <div class="term-wrap">
+    <div class="terminal">
+      <div class="term-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span class="term-title">heldout check</span>
+      </div>
+      <div class="term-body">
+        <div><span class="t-p">$ </span><span class="t-c">heldout check</span></div>
+        <div class="sp"></div>
+        <div id="term-stream" style="min-height:140px;"></div>
+        <div id="term-cur"><span class="t-p">$ </span><span class="cursor-blink"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="install-row">
+    <div class="install-box">
+      <span class="dl">$</span>
+      <span class="cm">cargo install heldout</span>
+      <button class="copy-btn" id="cbtn" onclick="doCopy()">copy</button>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="section" id="how">
+  <div class="section-inner">
+    <div class="s-label">workflow</div>
+    <h2 class="s-title">Three commands.<br><span class="hl">One truth.</span></h2>
+    <p class="s-sub">Before the agent starts, after it finishes. That's all heldout needs to catch the lie.</p>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-n" aria-hidden="true">01</div>
+        <div class="step-tag">Before the agent</div>
+        <div class="step-cmd">heldout start "Fix rounding bug"</div>
+        <div class="step-desc">Records HEAD commit as baseline. Snapshots every test file into a hidden archive. Auto-detects your test runner.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-n" aria-hidden="true">02</div>
+        <div class="step-tag">Let it run</div>
+        <div class="step-cmd">claude / codex / cursor / ...</div>
+        <div class="step-desc">The agent does its thing, claims it's done, claims the tests pass. heldout is watching the baseline the whole time.</div>
+      </div>
+      <div class="step reveal">
+        <div class="step-n" aria-hidden="true">03</div>
+        <div class="step-tag">After the agent</div>
+        <div class="step-cmd">heldout check</div>
+        <div class="step-desc">Scans the diff for cheat patterns. Replays original tests in a sandbox. Exit 0 if clean, exit 1 if caught.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHECKS -->
+<section class="section" id="checks">
+  <div class="section-inner">
+    <div class="s-label">deterministic checks</div>
+    <h2 class="s-title">No LLM needed<br>to <span class="hl">catch a lie.</span></h2>
+    <p class="s-sub">Six mechanical checks against every diff. No model, no API key, no false positives from vibes.</p>
+    <div class="checks-grid">
+      <div class="check-card reveal">
+        <div class="cc">C1</div>
+        <div class="ck">
+          <div class="ck-title">Test deleted</div>
+          <div class="ck-desc">Test file deleted or test functions removed from an existing file.</div>
+          <div class="ck-eg">*_test.go, test_*.py, *.test.ts, #[cfg(test)], @Test…</div>
+        </div>
+        <div class="sev sf">FAIL</div>
+      </div>
+      <div class="check-card reveal">
+        <div class="cc">C2</div>
+        <div class="ck">
+          <div class="ck-title">Test skipped</div>
+          <div class="ck-desc">Tests newly marked as skipped, ignored, or disabled.</div>
+          <div class="ck-eg">@pytest.mark.skip, it.skip, xit, @Disabled, #[ignore]…</div>
+        </div>
+        <div class="sev sf">FAIL</div>
+      </div>
+      <div class="check-card reveal">
+        <div class="cc">C3</div>
+        <div class="ck">
+          <div class="ck-title">Assertion removed</div>
+          <div class="ck-desc">An assertion deleted from a test without replacement, tracked at line level.</div>
+          <div class="ck-eg">Not just file changes — actual assertion deletions</div>
+        </div>
+        <div class="sev sf">FAIL</div>
+      </div>
+      <div class="check-card reveal">
+        <div class="cc">C4</div>
+        <div class="ck">
+          <div class="ck-title">Assertion weakened</div>
+          <div class="ck-desc">A specific assertion replaced by a looser one.</div>
+          <div class="ck-eg">.toEqual({id:"u1"}) → .toBeTruthy()  |  assert_eq!(x,201) → assert!(x&gt;=200)</div>
+        </div>
+        <div class="sev sf">FAIL</div>
+      </div>
+      <div class="check-card reveal">
+        <div class="cc">C5</div>
+        <div class="ck">
+          <div class="ck-title">Vacuous assertion</div>
+          <div class="ck-desc">An assertion that is always true — proves absolutely nothing.</div>
+          <div class="ck-eg">assert!(true), expect(true).toBe(true), assertTrue(true)</div>
+        </div>
+        <div class="sev sf">FAIL</div>
+      </div>
+      <div class="check-card reveal">
+        <div class="cc w">C6</div>
+        <div class="ck">
+          <div class="ck-title">Test command weakened</div>
+          <div class="ck-desc">The test invocation in CI or package.json was made less strict.</div>
+          <div class="ck-eg">--passWithNoTests, || true, cargo test --lib instead of --all</div>
+        </div>
+        <div class="sev sw">WARN</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REPLAY -->
+<section class="section" id="replay">
+  <div class="section-inner">
+    <div class="s-label">held-out replay</div>
+    <h2 class="s-title reveal">The moat.</h2>
+    <div class="replay-layout">
+      <div class="replay-text reveal">
+        <p>Pattern matching catches the obvious cheats. But what about the agent that <strong>rewrites the tests to match broken code</strong> — without touching skip markers?</p>
+        <p>On <em>heldout start</em>, your test files are snapshotted verbatim. On <em>heldout check</em>, a sandbox is built with the agent's modified <strong>source</strong> but your <strong>original tests</strong>.</p>
+        <p>If the agent quietly changed <code>expect(total).toBe(5)</code> to <code>expect(total).toBe(0)</code> to match broken code — the held-out replay fails. <strong>The lie is exposed.</strong></p>
+      </div>
+      <div class="flow reveal">
+        <div class="flow-item">
+          <div class="fi">📸</div>
+          <div class="fl">
+            <strong>heldout start</strong>
+            <span>test files snapshotted → .heldout/heldout/</span>
+          </div>
+        </div>
+        <div class="flow-item" style="margin-top:3px;">
+          <div class="fi">🤖</div>
+          <div class="fl">
+            <strong>agent runs</strong>
+            <span>modifies source AND quietly rewrites tests</span>
+          </div>
+        </div>
+        <div class="flow-item" style="margin-top:3px;">
+          <div class="fi">🔁</div>
+          <div class="fl">
+            <strong>sandbox built</strong>
+            <span>agent source + <em>original tests</em></span>
+          </div>
+        </div>
+        <div class="flow-item fail-item" style="margin-top:3px;">
+          <div class="fi">💥</div>
+          <div class="fl">
+            <strong>original tests run</strong>
+            <span>broken source can't hide from honest tests</span>
+          </div>
+          <div class="fv fail">FAIL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="cta-inner">
+    <h2 class="cta-title reveal">Stop<br>trusting.</h2>
+    <p class="cta-sub reveal">Zero config. Any language. One extra line in CI.</p>
+    <div class="cta-cmds reveal">
+      <div class="cta-line"><span class="cp">$ </span><span class="cg">cargo install heldout</span></div>
+      <div class="cta-line"><span class="cp">$ </span><span class="cg">heldout init</span></div>
+      <div class="cta-line"><span class="cp">$ </span><span class="cg">heldout start </span><span class="cw">"your task here"</span></div>
+      <div class="cta-line"><span class="cp">  </span><span class="cd"># ... let the agent run ...</span></div>
+      <div class="cta-line"><span class="cp">$ </span><span class="cg">heldout check</span></div>
+    </div>
+    <div class="cta-links reveal">
+      <a href="https://github.com/abdouloued/heldout" target="_blank">github ↗</a>
+      <a href="https://github.com/abdouloued/heldout/releases" target="_blank">releases ↗</a>
+      <a href="https://github.com/abdouloued/heldout/blob/main/.github/workflows/heldout.yml" target="_blank">ci example ↗</a>
+      <a href="https://crates.io/crates/heldout" target="_blank">crates.io ↗</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <span>heldout · MIT license</span>
+  <span>built on <a href="https://github.com/abdouloued/agentscopev2" target="_blank">agentscopev2</a></span>
+</footer>
+
+<script>
+  // Typewriter terminal — all hardcoded strings, no user input
+  const termLines = [
+    ['t-l', 'heldout  task: Fix checkout rounding bug'],
+    ['t-d', '         base: a3f9c12'],
+    ['',    ''],
+    ['t-l', '  CLAIMED:  done, tests pass'],
+    ['t-d', '  REALITY:'],
+    ['',    ''],
+    ['t-r', '    FAIL    C1  tests/checkout.test.ts    2 test cases removed'],
+    ['t-r', '    FAIL    C2  tests/cart.test.ts:88      added it.skip('],
+    ['t-r', '    FAIL    C3  tests/total.test.ts:41     replaced with expect(true)'],
+    ['',    ''],
+    ['t-r', '  HELD-OUT REPLAY:  4 FAILED, 11 passed'],
+    ['t-d', '    ✗  totals rounds half-up'],
+    ['t-d', '    ✗  applies discount before tax'],
+    ['',    ''],
+    ['verdict', ''],
+  ];
+
+  const stream  = document.getElementById('term-stream');
+  const termCur = document.getElementById('term-cur');
+
+  termLines.forEach(([cls, text], i) => {
+    setTimeout(() => {
+      if (cls === 'verdict') {
+        const box  = document.createElement('div');
+        box.className = 'verdict-box';
+        const badge = document.createElement('span');
+        badge.className = 'v-badge';
+        badge.textContent = 'FAIL';
+        const msg = document.createElement('span');
+        msg.className = 'v-msg';
+        msg.textContent = 'completion claim not supported by evidence';
+        box.appendChild(badge);
+        box.appendChild(msg);
+        stream.appendChild(box);
+      } else {
+        const div = document.createElement('div');
+        if (cls) div.className = cls;
+        if (text === '') {
+          div.style.height = '4px';
+          div.style.display = 'block';
+        } else {
+          div.textContent = text;
+        }
+        stream.appendChild(div);
+      }
+    }, 600 + i * 90);
+  });
+
+  // Copy button
+  function doCopy() {
+    navigator.clipboard.writeText('cargo install heldout').then(() => {
+      const btn = document.getElementById('cbtn');
+      btn.textContent = 'copied!';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('ok'); }, 2000);
+    });
+  }
+
+  // Scroll reveals
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const siblings = Array.from(e.target.parentNode.children).filter(c => c.classList.contains('reveal'));
+        const idx = siblings.indexOf(e.target);
+        e.target.style.transitionDelay = (idx * 75) + 'ms';
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
