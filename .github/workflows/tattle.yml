@@ -1,0 +1,74 @@
+# Add this to your CI after the agent step.
+# Fails the job if tattle detects integrity violations.
+name: tattle integrity check
+
+on:
+  pull_request:
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install tattle
+        run: |
+          curl -fsSL https://github.com/abdouloued/tattle/releases/latest/download/tattle-linux-x86_64.tar.gz \
+            | tar -xz -C /usr/local/bin
+
+      # Run before agent step — records baseline + snapshots tests
+      - name: tattle start
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          ACTOR: ${{ github.actor }}
+        run: tattle start "$PR_TITLE" --agent "$ACTOR"
+
+      # ... your agent step goes here ...
+
+      # Check after agent step — replay held-out tests, report findings
+      - name: tattle check
+        id: tattle
+        run: tattle check --json > tattle-report.json
+        continue-on-error: true
+
+      - name: Upload tattle report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tattle-report
+          path: tattle-report.json
+
+      - name: Post PR comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('tattle-report.json', 'utf8'));
+            const verdict = report.verdict;
+            const icon = verdict === 'PASS' ? '✅' : '❌';
+            const findings = report.findings.length;
+            const replayFailed = report.replay.filter(r => r.ran && !r.passed).length;
+            const task = report.task || 'none';
+            const base = (report.base_commit || '').slice(0,7);
+            let body = `## ${icon} tattle integrity — ${verdict}\n\n` +
+              `**Findings:** ${findings}  **Replay failures:** ${replayFailed}\n\n`;
+            if (findings > 0) {
+              body += '| Code | File | Detail |\n|------|------|--------|\n';
+              body += report.findings.map(f => `| ${f.code} | \`${f.path}\` | ${f.message} |`).join('\n');
+              body += '\n\n';
+            }
+            body += `*task: ${task}  base: \`${base}\`*`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+
+      - name: Fail on integrity violation
+        if: steps.tattle.outcome == 'failure'
+        run: |
+          echo "tattle found integrity violations — see tattle-report.json"
+          exit 1
